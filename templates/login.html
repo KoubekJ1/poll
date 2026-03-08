@@ -1,33 +1,88 @@
 {% extends 'base.html' %}
 
 {% block content %}
-    <div style="max-width: 400px; margin: 0 auto; border: 1px solid #999; padding: 20px; border-radius: 5px;">
-        <h3 style="margin-top: 0;">Sign In</h3>
-        <hr style="border-top: 2px solid #ddeeff; margin-bottom: 20px;">
+<style>
+    .auth-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2.5rem;
+        max-width: 850px;
+        margin: 0 auto;
+    }
+
+    .auth-card {
+        flex: 1;
+        min-width: 300px;
+        background: #ffffff;
+        padding: 2.5rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+        border: 1px solid #eaeaea;
+    }
+
+    .auth-card h3 {
+        margin-top: 0;
+        color: #1a1a1a;
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .auth-divider {
+        height: 4px;
+        background: #0066cc;
+        width: 45px;
+        margin-bottom: 1.75rem;
+        border-radius: 2px;
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        color: #444;
+        font-size: 0.9rem;
+    }
+
+    .auth-btn {
+        width: 100%;
+        padding: 0.85rem;
+        font-size: 1rem;
+        margin-top: 1rem;
+        letter-spacing: 0.5px;
+    }
+</style>
+
+<div class="auth-container">
+    <div class="auth-card">
+        <h3>Sign In</h3>
+        <div class="auth-divider"></div>
         <form action="{{ url_for('api_user_login') }}" method="POST">
             <div class="form-group">
-                <label>User Email:</label>
+                <label class="form-label">User Email</label>
                 <input type="email" name="email" class="form-control" placeholder="example@email.com" required>
             </div>
             <div class="form-group">
-                <label>Password:</label>
-                <input type="password" name="password" class="form-control" placeholder="********" required>
+                <label class="form-label">Password</label>
+                <input type="password" name="password" class="form-control" placeholder="••••••••" required>
             </div>
-            <button type="submit" class="btn btn-primary" style="background-color: #66bbff;">SIGN IN</button>
-        </form>
-
-        <h3 style="margin-top: 40px;">New User</h3>
-        <hr style="border-top: 2px solid #ddeeff; margin-bottom: 20px;">
-        <form action="{{ url_for('api_user_register') }}" method="POST">
-            <div class="form-group">
-                <label>User Email:</label>
-                <input type="email" name="email" class="form-control" placeholder="example@email.com" required>
-            </div>
-            <div class="form-group">
-                <label>Password:</label>
-                <input type="password" name="password" class="form-control" placeholder="********" required>
-            </div>
-            <button type="submit" class="btn btn-primary" style="background-color: #66bbff;">SIGN UP</button>
+            <button type="submit" class="btn btn-primary auth-btn">SIGN IN</button>
         </form>
     </div>
+
+    <div class="auth-card">
+        <h3>New User</h3>
+        <div class="auth-divider"></div>
+        <form action="{{ url_for('api_user_register') }}" method="POST">
+            <div class="form-group">
+                <label class="form-label">User Email</label>
+                <input type="email" name="email" class="form-control" placeholder="example@email.com" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="btn btn-primary auth-btn">SIGN UP</button>
+        </form>
+    </div>
+</div>
 {% endblock %}

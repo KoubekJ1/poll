@@ -3,97 +3,150 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>jPoll</title>
     <style>
         body {
-            font-family: sans-serif;
+            font-family: system-ui, -apple-system, sans-serif;
             margin: 0;
             padding: 0;
-            background-color: #f4f4f4;
+            background-color: #f8f9fa;
+            color: #333;
         }
 
         .navbar {
-            background-color: #fff;
-            padding: 15px 50px;
-            border-bottom: 1px solid #c4c4c4;
+            background-color: #ffffff;
+            padding: 0.75rem 2rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
             display: flex;
             align-items: center;
+            gap: 1.5rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
         }
 
         .navbar h2 {
             margin: 0;
-            margin-right: 30px;
+            color: #0066cc;
+            font-weight: 700;
+            letter-spacing: -0.5px;
         }
 
         .navbar a {
             text-decoration: none;
-            color: #333;
-            margin-right: 20px;
-            font-size: 20px;
+            color: #555;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: color 0.2s ease;
         }
 
-        .navbar .user-icon {
+        .navbar a:hover {
+            color: #0066cc;
+        }
+
+        .navbar .user-section {
             margin-left: auto;
+            display: flex;
+            align-items: center;
         }
 
         .container {
             max-width: 800px;
-            margin: 50px auto;
-            background: #fff;
-            padding: 40px;
-            border: 1px solid #c4c4c4;
+            margin: 3rem auto;
+            background: #ffffff;
+            padding: 2.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
 
         .btn {
-            padding: 10px 20px;
-            font-size: 17px;
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            text-decoration: none;
             border: none;
-            border-radius: 5px;
+            border-radius: 4px;
             cursor: pointer;
-            color: #fff;
-            font-weight: bold;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            text-align: center;
         }
 
         .btn-primary {
-            background-color: #008cff;
+            background-color: #0066cc;
+            color: #ffffff;
+        }
+
+        .btn-primary:hover {
+            background-color: #0052a3;
         }
 
         .btn-logout {
+            background-color: #fff;
+            color: #dc3545;
+            border: 1px solid #dc3545;
+        }
+
+        .btn-logout:hover {
             background-color: #dc3545;
+            color: #ffffff;
+        }
+
+        .login-icon {
+            font-size: 1.2rem;
+            background: #f0f2f5;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
         }
 
         .flash {
-            padding: 10px;
-            margin-bottom: 20px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
             border-radius: 4px;
+            font-weight: 500;
         }
 
         .flash.success {
             background-color: #d4edda;
             color: #155724;
+            border: 1px solid #c3e6cb;
         }
 
-        .flash.danger {
+        .flash.danger, .flash.error {
             background-color: #f8d7da;
             color: #721c24;
+            border: 1px solid #f5c6cb;
         }
 
         .flash.warning {
             background-color: #fff3cd;
             color: #856404;
+            border: 1px solid #ffeeba;
         }
 
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 1.25rem;
         }
 
         .form-control {
             width: 100%;
-            padding: 10px;
-            font-size: 17px;
-            border: 1px solid #999;
+            padding: 0.75rem;
+            font-size: 1rem;
+            border: 1px solid #ddd;
             border-radius: 4px;
             box-sizing: border-box;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #0066cc;
+            box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.15);
         }
     </style>
 </head>
@@ -106,11 +159,12 @@
         {% if is_admin %}
         <a href="{{ url_for('admin_bugs') }}">Bug Reports</a>
         {% endif %}
-        <div class="user-icon">
+        
+        <div class="user-section">
             {% if session.user_id %}
-            <a href="{{ url_for('logout') }}" class="btn btn-logout" style="color: white; font-size: 14px;">Logout</a>
+            <a href="{{ url_for('logout') }}" class="btn btn-logout">Logout</a>
             {% else %}
-            <a href="{{ url_for('login') }}">👤</a>
+            <a href="{{ url_for('login') }}" class="btn" title="Login">Login</a>
             {% endif %}
         </div>
     </div>

@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    .dashboard-container {
+        font-family: system-ui, -apple-system, sans-serif;
+        max-width: 1200px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+        color: #333;
+    }
+
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #eee;
+    }
+
+    .dashboard-header h1 {
+        margin: 0;
+        color: #1a1a1a;
+    }
+
+    .btn-back {
+        text-decoration: none;
+        color: #0066cc;
+        font-weight: 500;
+        padding: 0.5rem 1rem;
+        border: 1px solid #0066cc;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+    }
+
+    .btn-back:hover {
+        background: #0066cc;
+        color: white;
+    }
+
+    .flash-messages {
+        list-style: none;
+        padding: 0;
+        margin-bottom: 2rem;
+    }
+
+    .flash-messages li {
+        padding: 1rem;
+        border-radius: 4px;
+        margin-bottom: 0.5rem;
+    }
+
+    .flash-messages .success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+
+    .flash-messages .error {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+
+    .table-container {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        overflow-x: auto;
+    }
+
+    .bug-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+    }
+
+    .bug-table th, .bug-table td {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #eee;
+    }
+
+    .bug-table th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        color: #444;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.5px;
+    }
+
+    .bug-table tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+
+    .status-badge {
+        padding: 0.35rem 0.75rem;
+        border-radius: 999px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .status-resolved {
+        background-color: #e6f4ea;
+        color: #137333;
+    }
+
+    .status-open {
+        background-color: #fce8e6;
+        color: #c5221f;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #666;
+        font-style: italic;
+    }
+</style>
+
+<div class="dashboard-container">
+    <header class="dashboard-header">
+        <h1>Bug Reports Dashboard</h1>
+        <a href="{{ url_for('today') }}" class="btn-back">Back to Home</a>
+    </header>
+
+    <main>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <ul class="flash-messages">
+                {% for category, message in messages %}
+                    <li class="{{ category }}">{{ message }}</li>
+                {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+
+        <div class="table-container">
+            <table class="bug-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Email</th>
+                        <th>Message</th>
+                        <th>Date Submitted</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for bug in bugs %}
+                    <tr>
+                        <td>{{ bug.ReportID }}</td>
+                        <td>{{ bug.Email }}</td>
+                        <td>{{ bug.Message }}</td>
+                        <td>{{ bug.DateSubmitted.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                        <td>
+                            {% if bug.IsResolved %}
+                                <span class="status-badge status-resolved">Resolved</span>
+                            {% else %}
+                                <span class="status-badge status-open">Open</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="empty-state">No bugs reported yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+{% endblock %}

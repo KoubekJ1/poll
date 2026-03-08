@@ -126,8 +126,14 @@ def about():
             db.session.commit()
             flash('Bug report submitted successfully.', 'success')
             return redirect(url_for('about'))
+        
+    is_admin = False
+    if 'user_id' in session:
+        user = User.query.get(session['user_id'])
+        if user and user.IsAdmin:
+            is_admin = True
             
-    return render_template('about.html')
+    return render_template('about.html', is_admin=is_admin)
 
 @app.route('/login', methods=['GET'])
 def login():
@@ -216,6 +222,24 @@ def reset_poll():
         flash('Invalid reset token.', 'danger')
     
     return redirect(url_for('today'))
+
+@app.route('/bugs')
+@login_required
+def admin_bugs():
+    user = User.query.get(session['user_id'])
+    if not user or not user.IsAdmin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('today'))
+    
+    reports = BugReport.query.order_by(BugReport.DateSubmitted.desc()).all()
+
+    is_admin = False
+    if 'user_id' in session:
+        user = User.query.get(session['user_id'])
+        if user and user.IsAdmin:
+            is_admin = True
+
+    return render_template('bugs.html', bugs=reports, is_admin=is_admin)
 
 @app.route('/logout')
 def logout():

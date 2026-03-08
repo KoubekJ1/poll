@@ -1,14 +1,18 @@
+import os
+from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from functools import wraps
 
+load_dotenv()
+
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'dev_secret_key'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///jpoll.db'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('SQLALCHEMY_DATABASE_URI')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['RESET_TOKEN'] = 'superadmin123'
+app.config['RESET_TOKEN'] = os.environ.get('RESET_TOKEN')
 
 db = SQLAlchemy(app)
 
@@ -166,6 +170,7 @@ def api_poll_results():
             "votes": count
         })
     return jsonify(data)
+
 
 @app.route('/poll/reset', methods=['POST'])
 @login_required

@@ -51,6 +51,7 @@ class BugReport(db.Model):
     Email = db.Column(db.String(120), nullable=False)
     Message = db.Column(db.Text, nullable=False)
     DateSubmitted = db.Column(db.DateTime, default=datetime.utcnow)
+    IsResolved = db.Column(db.Boolean, default=False)
 
 with app.app_context():
     inspector = inspect(db.engine)
@@ -111,14 +112,21 @@ def today():
 @app.route('/about', methods=['GET', 'POST'])
 def about():
     if request.method == 'POST':
-        email = request.form.get('email')
+        if 'user_id' not in session:
+            flash('You must be logged in to submit a bug report.', 'danger')
+            return redirect(url_for('login'))
+            
+        user = User.query.get(session['user_id'])
+        email = user.Email
         message = request.form.get('message')
+        
         if email and message:
-            new_report = BugReport(Email=email, Message=message)
+            new_report = BugReport(Email=email, Message=message, IsResolved=False)
             db.session.add(new_report)
             db.session.commit()
             flash('Bug report submitted successfully.', 'success')
             return redirect(url_for('about'))
+            
     return render_template('about.html')
 
 @app.route('/login', methods=['GET'])

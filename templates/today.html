@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h1 style="margin-top: 0px;">{{ poll.Title }}</h1>
+    <p>Vyberte jednu z níže uvedených možností a podělte se o svůj názor.</p>
+
+    {% if session.user_id and not user_voted %}
+        <form action="{{ url_for('api_poll_vote') }}" method="POST" style="margin-top: 30px;">
+            {% for option in poll.Options %}
+                <button type="submit" name="option_id" value="{{ option.PollOptionID }}" class="btn" style="background-color: #006666; margin-right: 10px; margin-bottom: 10px;">
+                    {{ option.OptionText }}
+                </button>
+            {% endfor %}
+        </form>
+    {% else %}
+        <div style="margin-top: 30px;">
+            <h3>Výsledky:</h3>
+            {% for option in poll.Options %}
+                <div style="margin-bottom: 15px;">
+                    <strong>{{ option.OptionText }}</strong>: 
+                    {% set count = results[option.PollOptionID] %}
+                    {% if total_votes > 0 %}
+                        {% set percentage = (count / total_votes * 100) | round(1) %}
+                    {% else %}
+                        {% set percentage = 0 %}
+                    {% endif %}
+                    {{ percentage }}% ({{ count }} hlasů)
+                </div>
+            {% endfor %}
+        </div>
+        {% if not session.user_id %}
+            <p style="margin-top: 20px;"><a href="{{ url_for('login') }}">Přihlaste se</a>, pokud chcete hlasovat.</p>
+        {% endif %}
+    {% endif %}
+
+    <div style="margin-top: 40px;">
+        <a href="{{ url_for('api_poll_results') }}" class="btn btn-primary" style="text-decoration: none; display: inline-block;">Zobrazit JSON výsledky</a>
+    </div>
+
+    {% if is_admin %}
+        <hr style="margin-top: 50px;">
+        <h3>Admin zóna</h3>
+        <form action="{{ url_for('reset_poll') }}" method="POST" style="display: flex; gap: 10px; align-items: center;">
+            <input type="hidden" name="poll_id" value="{{ poll.PollID }}">
+            <input type="password" name="reset_token" placeholder="Zadejte reset token" class="form-control" style="width: 250px; margin: 0;" required>
+            <button type="submit" class="btn btn-primary">Reset votes</button>
+        </form>
+    {% endif %}
+{% endblock %}

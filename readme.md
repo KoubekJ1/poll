@@ -1,31 +1,32 @@
 # jPoll - The Poll of the Day App
 
-jPoll is a web-based voting application that allows users to answer a single poll of the day and view the aggregated results. It features user authentication, a dedicated admin zone for resetting votes using a secure token, and a JSON endpoint for fetching live results.
+jPoll is a web-based voting application that allows users to answer a single poll of the day and view the aggregated results. It features user authentication with email verification, a dedicated admin zone for resetting votes using a secure token, and a JSON endpoint for fetching live results. The entire application is containerized using Docker for easy deployment.
 
 ## Features
 
 * **Daily Poll**: Users can view the current question and its available options.
 * **Voting System**: Registered users can cast a single vote. 
 * **Live Results**: Anyone can view the current vote counts and percentages without needing to vote.
-* **User Authentication**: Full sign-up and sign-in functionality.
+* **User Authentication**: Full sign-up and sign-in functionality, including email verification to prevent spam.
 * **Admin Controls**: Administrators can reset the poll votes completely, provided they supply the correct server-side reset token.
 * **JSON API**: Real-time poll results can be fetched via a dedicated `/poll/results` endpoint.
 * **Bug Reporting**: A built-in form for users to report issues directly to the admins.
+* **Dockerized Environment**: Quick and consistent deployment using Docker and Docker Compose.
 
 ## Tech Stack
 
-* **Backend**: Python, Flask
+* **Backend**: Python, Flask, Flask-Mail, itsdangerous
 * **Database**: MySQL, SQLAlchemy (ORM), PyMySQL (Driver)
 * **Frontend**: HTML, Jinja2 Templates, CSS
-* **Configuration**: python-dotenv
+* **Infrastructure**: Docker, Docker Compose
 
 ---
 
 ## Prerequisites
 
 Before you begin, ensure you have the following installed on your system:
-* Python 3.8 or higher
-* MySQL Server
+* Docker
+* Docker Compose
 * Git 
 
 ---
@@ -36,69 +37,47 @@ Before you begin, ensure you have the following installed on your system:
 
 Navigate to your desired directory and clone or extract the project files.
 
-### 2. Set Up a Virtual Environment
+### 2. Configure Environment Variables
 
-It is highly recommended to isolate the project dependencies using a virtual environment.
-
-**For macOS/Linux:**
-```bash
-python3 -m venv venv
-source venv/bin/activate
-```
-
-**For Windows:**
-```cmd
-python -m venv venv
-venv\Scripts\activate
-```
-
-### 3. Install Dependencies
-
-Install all required Python packages from the requirements file.
+Create a copy of the template environment file and rename it to `.env` in the root directory of the project.
 
 ```bash
-pip install -r requirements.txt
+cp .env.template .env
 ```
 
-### 4. Create the MySQL Database
-
-Log into your MySQL server and create a dedicated database for the application.
-
-```sql
-CREATE DATABASE jpoll_db;
-CREATE USER 'db_user'@'localhost' IDENTIFIED BY 'db_password';
-GRANT ALL PRIVILEGES ON jpoll_db.* TO 'db_user'@'localhost';
-FLUSH PRIVILEGES;
-EXIT;
-```
-
-### 5. Configure Environment Variables
-
-Create a file named `.env` in the root directory of the project (next to `app.py`). Add the following configuration variables, updating the database URI to match the credentials you created in the previous step.
+Open the `.env` file and populate it with your specific credentials, including your SMTP email server details for the verification system.
 
 ```text
 SECRET_KEY=your_secure_random_secret_key
-SQLALCHEMY_DATABASE_URI=mysql+pymysql://db_user:db_password@localhost/jpoll_db
+MYSQL_DATABASE=jpoll_db
+MYSQL_USER=jpoll_user
+MYSQL_PASSWORD=jpoll_password
+MYSQL_ROOT_PASSWORD=root_password
 RESET_TOKEN=superadmin123
+MAIL_SERVER=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USE_TLS=True
+MAIL_USERNAME=your_email@gmail.com
+MAIL_PASSWORD=your_app_password
 ```
 
-### 6. Initialize the Database
+### 3. Build and Run the Containers
 
-Generate the database tables and populate the default data (including the default admin account and the first poll).
+Use Docker Compose to build the web application image and start both the web and database containers in the background.
 
 ```bash
-flask --app app init-db
+docker compose up -d --build
 ```
 
-### 7. Run the Application
+### 4. Initialize the Database
 
-Start the Flask development server.
+Give the MySQL container a few moments to fully start up. Once it is running, execute the initialization command inside the web container to create the tables and insert the default data.
 
 ```bash
-flask --app app run --debug
+docker compose exec web flask --app app init-db
 ```
 
-The application will now be accessible in your web browser at `http://127.0.0.1:5000`.
+The application will now be accessible in your web browser at `http://localhost:8000`.
 
 ---
 
@@ -106,7 +85,7 @@ The application will now be accessible in your web browser at `http://127.0.0.1:
 
 ### Default Accounts
 
-The initialization script creates a default administrator account. You can log in with:
+The initialization script creates a default, pre-verified administrator account. You can log in immediately with:
 * **Email**: `admin@jpoll.com`
 * **Password**: `admin`
 
@@ -122,29 +101,34 @@ To test the admin reset feature:
 
 ## Troubleshooting
 
-### ModuleNotFoundError: No module named 'flask'
+### Emails Are Not Sending
 
-Your virtual environment is either not activated or the dependencies were not installed properly. Run the activation command again and ensure `pip install -r requirements.txt` finishes without errors.
+If users are registering but not receiving verification emails:
+* Verify that your `MAIL_USERNAME` and `MAIL_PASSWORD` are correct in the `.env` file.
+* If using Gmail, ensure you have generated an "App Password" specifically for this application, as standard account passwords will be blocked.
+* Check that the `MAIL_PORT` matches your provider's recommended TLS/SSL settings.
 
-### sqlalchemy.exc.OperationalError: (pymysql.err.OperationalError) (1045, "Access denied for user...")
+### Database Initialization Fails
 
-The application cannot connect to the MySQL database. 
-* Verify that your MySQL server is running.
-* Double-check the `SQLALCHEMY_DATABASE_URI` in your `.env` file. It must exactly match the username, password, and database name configured in MySQL.
-
-### Database Initialization Does Not Create Tables
-
-If running `flask --app app init-db` does nothing or throws an error:
-* Ensure you are running the command in the same directory as `app.py`.
-* Check that your `.env` file is formatted correctly with no spaces around the equals signs.
+If running the `init-db` command throws a connection error:
+* The MySQL container might still be booting up. Wait 10-15 seconds and try the command again.
+* Ensure the database variables (`MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`) in your `.env` file contain no trailing spaces or special characters that might break the connection string.
 
 ### "Invalid reset token" Error
 
 When trying to reset the poll as an admin, if you receive this error, the token you typed in the browser does not match the `RESET_TOKEN` value in your `.env` file. Ensure there are no trailing spaces in your `.env` file.
 
-### Port 5000 is Already in Use
+### Port 8000 is Already in Use
 
-If Flask fails to start because the port is occupied, you can run the app on a different port:
+If Docker fails to start the web container because the port is occupied, you can change the host port mapping in your `docker-compose.yml` file:
+
+```yaml
+    ports:
+      - "8080:8000"
+```
+
+Then rebuild the containers:
+
 ```bash
-flask --app app run --port 5001 --debug
+docker compose up -d
 ```

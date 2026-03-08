@@ -1,10 +1,8 @@
 .DS_Store
 .vs/
 .vscode/
-
 venv/
 .venv/
-
 instance/
-
 .env
+__pycache__/

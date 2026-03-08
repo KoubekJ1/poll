@@ -5,7 +5,9 @@ from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from functools import wraps
-import click
+from flask_mail import Mail, Message
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadTimeSignature
+from sqlalchemy import inspect
 
 load_dotenv()
 
@@ -15,7 +17,16 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('SQLALCHEMY_DATABASE_URI'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['RESET_TOKEN'] = os.environ.get('RESET_TOKEN')
 
+app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
+app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
+app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'True') == 'True'
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_USERNAME')
+
 db = SQLAlchemy(app)
+mail = Mail(app)
+s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 class Poll(db.Model):
     __tablename__ = 'Polls'
@@ -37,6 +48,7 @@ class User(db.Model):
     Email = db.Column(db.String(120), unique=True, nullable=False)
     Password = db.Column(db.String(255), nullable=False)
     IsAdmin = db.Column(db.Boolean, default=False)
+    IsVerified = db.Column(db.Boolean, default=False)
     Votes = db.relationship('Vote', backref='user', lazy=True)
 
 class Vote(db.Model):
@@ -52,21 +64,12 @@ class BugReport(db.Model):
     Message = db.Column(db.Text, nullable=False)
     DateSubmitted = db.Column(db.DateTime, default=datetime.utcnow)
 
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'user_id' not in session:
-            return redirect(url_for('login'))
-        return f(*args, **kwargs)
-    return decorated_function
-
-@app.cli.command("init-db")
-def init_db_command():
-    db.create_all()
-    if not User.query.filter_by(Email='admin@jpoll.com').first():
-        admin = User(Email='admin@jpoll.com', Password=generate_password_hash('admin', method='pbkdf2:sha256'), IsAdmin=True)
+with app.app_context():
+    inspector = inspect(db.engine)
+    if not inspector.has_table('User'):
+        db.create_all()
+        admin = User(Email='admin@jpoll.com', Password=generate_password_hash('admin', method='pbkdf2:sha256'), IsAdmin=True, IsVerified=True)
         db.session.add(admin)
-    if not Poll.query.first():
         poll = Poll(Title="Kolik otevřených záložek je ještě normální?")
         db.session.add(poll)
         db.session.commit()
@@ -75,7 +78,14 @@ def init_db_command():
         opt3 = PollOption(PollID=poll.PollID, OptionText="Více než 50 (Prohlížeč trpí)")
         db.session.add_all([opt1, opt2, opt3])
         db.session.commit()
-    print("Database initialized successfully.")
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 @app.route('/')
 def index():
@@ -133,6 +143,9 @@ def api_user_login():
     password = request.form.get('password')
     user = User.query.filter_by(Email=email).first()
     if user and check_password_hash(user.Password, password):
+        if not user.IsVerified:
+            flash('Please verify your email address before logging in.', 'warning')
+            return redirect(url_for('login'))
         session['user_id'] = user.UserID
         flash('Logged in successfully.', 'success')
         return redirect(url_for('today'))
@@ -148,10 +161,42 @@ def api_user_register():
         return redirect(url_for('login'))
     
     hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
-    new_user = User(Email=email, Password=hashed_password)
+    new_user = User(Email=email, Password=hashed_password, IsVerified=False)
     db.session.add(new_user)
     db.session.commit()
-    flash('Registration successful. Please log in.', 'success')
+    
+    token = s.dumps(email, salt='email-confirm')
+    link = url_for('verify_email', token=token, _external=True)
+    msg = Message('Verify Your Email for jPoll', recipients=[email])
+    msg.body = f'Your verification link is: {link}\n\nThis link will expire in 1 hour.'
+    
+    try:
+        mail.send(msg)
+        flash('Registration successful. A verification link has been sent to your email.', 'success')
+    except Exception as e:
+        flash('Registration successful, but failed to send verification email. Please contact support.', 'warning')
+    
+    return redirect(url_for('login'))
+
+@app.route('/verify/<token>')
+def verify_email(token):
+    try:
+        email = s.loads(token, salt='email-confirm', max_age=3600)
+    except SignatureExpired:
+        flash('The verification link has expired.', 'danger')
+        return redirect(url_for('login'))
+    except BadTimeSignature:
+        flash('Invalid verification token.', 'danger')
+        return redirect(url_for('login'))
+        
+    user = User.query.filter_by(Email=email).first()
+    if user:
+        if user.IsVerified:
+            flash('Account already verified. Please log in.', 'success')
+        else:
+            user.IsVerified = True
+            db.session.commit()
+            flash('Your email has been verified! You can now log in.', 'success')
     return redirect(url_for('login'))
 
 @app.route('/poll/vote', methods=['POST'])
@@ -216,4 +261,5 @@ def logout():
     return redirect(url_for('today'))
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get('APP_PORT', 8000))
+    app.run(host='0.0.0.0', port=port)

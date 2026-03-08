@@ -12,6 +12,8 @@ jPoll is a web-based voting application that allows users to answer a single pol
 * **JSON API**: Real-time poll results can be fetched via a dedicated `/poll/results` endpoint.
 * **Bug Reporting**: A built-in form for users to report issues directly to the admins.
 * **Dockerized Environment**: Quick and consistent deployment using Docker and Docker Compose.
+* **Auto-Initialize**: The database schema and default admin user automatically initialize on startup.
+* **Development Mode**: Integrated setup for hot-reloading Flask inside Docker during local development.
 
 ## Tech Stack
 
@@ -61,7 +63,7 @@ MAIL_USERNAME=your_email@gmail.com
 MAIL_PASSWORD=your_app_password
 ```
 
-### 3. Build and Run the Containers
+### 3. Build and Run the Containers (Production Mode)
 
 Use Docker Compose to build the web application image and start both the web and database containers in the background.
 
@@ -69,15 +71,17 @@ Use Docker Compose to build the web application image and start both the web and
 docker compose up -d --build
 ```
 
-### 4. Initialize the Database
+The database tables and initial data will be automatically generated upon startup. The application will be accessible in your web browser at `http://localhost:8000`.
 
-Give the MySQL container a few moments to fully start up. Once it is running, execute the initialization command inside the web container to create the tables and insert the default data.
+---
+
+## Development Mode
+
+To actively develop the application and take advantage of Flask's auto-reload functionality while still using the Docker database setup, use the development override file.
 
 ```bash
-docker compose exec web flask --app app init-db
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 ```
-
-The application will now be accessible in your web browser at `http://localhost:8000`.
 
 ---
 
@@ -85,7 +89,7 @@ The application will now be accessible in your web browser at `http://localhost:
 
 ### Default Accounts
 
-The initialization script creates a default, pre-verified administrator account. You can log in immediately with:
+The startup script creates a default, pre-verified administrator account. You can log in immediately with:
 * **Email**: `admin@jpoll.com`
 * **Password**: `admin`
 
@@ -105,14 +109,14 @@ To test the admin reset feature:
 
 If users are registering but not receiving verification emails:
 * Verify that your `MAIL_USERNAME` and `MAIL_PASSWORD` are correct in the `.env` file.
-* If using Gmail, ensure you have generated an "App Password" specifically for this application, as standard account passwords will be blocked.
+* If using Gmail, ensure you have generated an "App Password" specifically for this application.
 * Check that the `MAIL_PORT` matches your provider's recommended TLS/SSL settings.
 
-### Database Initialization Fails
+### Database Fails to Initialize
 
-If running the `init-db` command throws a connection error:
-* The MySQL container might still be booting up. Wait 10-15 seconds and try the command again.
-* Ensure the database variables (`MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`) in your `.env` file contain no trailing spaces or special characters that might break the connection string.
+If the application throws an error when attempting to auto-create tables:
+* The MySQL container might still be booting up. Wait 10-15 seconds and restart the web container.
+* Ensure the database variables (`MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`) in your `.env` file contain no trailing spaces or special characters.
 
 ### "Invalid reset token" Error
 

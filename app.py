@@ -5,6 +5,7 @@ from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from functools import wraps
+import click
 
 load_dotenv()
 
@@ -58,6 +59,23 @@ def login_required(f):
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
+
+@app.cli.command("init-db")
+def init_db_command():
+    db.create_all()
+    if not User.query.filter_by(Email='admin@jpoll.com').first():
+        admin = User(Email='admin@jpoll.com', Password=generate_password_hash('admin', method='pbkdf2:sha256'), IsAdmin=True)
+        db.session.add(admin)
+    if not Poll.query.first():
+        poll = Poll(Title="Kolik otevřených záložek je ještě normální?")
+        db.session.add(poll)
+        db.session.commit()
+        opt1 = PollOption(PollID=poll.PollID, OptionText="Méně než 10")
+        opt2 = PollOption(PollID=poll.PollID, OptionText="10 až 50")
+        opt3 = PollOption(PollID=poll.PollID, OptionText="Více než 50 (Prohlížeč trpí)")
+        db.session.add_all([opt1, opt2, opt3])
+        db.session.commit()
+    print("Database initialized successfully.")
 
 @app.route('/')
 def index():
@@ -171,7 +189,6 @@ def api_poll_results():
         })
     return jsonify(data)
 
-
 @app.route('/poll/reset', methods=['POST'])
 @login_required
 def reset_poll():
@@ -198,22 +215,5 @@ def logout():
     session.pop('user_id', None)
     return redirect(url_for('today'))
 
-def initialize_database():
-    with app.app_context():
-        db.create_all()
-        if not User.query.filter_by(Email='admin@jpoll.com').first():
-            admin = User(Email='admin@jpoll.com', Password=generate_password_hash('admin', method='pbkdf2:sha256'), IsAdmin=True)
-            db.session.add(admin)
-        if not Poll.query.first():
-            poll = Poll(Title="Kolik otevřených záložek je ještě normální?")
-            db.session.add(poll)
-            db.session.commit()
-            opt1 = PollOption(PollID=poll.PollID, OptionText="Méně než 10")
-            opt2 = PollOption(PollID=poll.PollID, OptionText="10 až 50")
-            opt3 = PollOption(PollID=poll.PollID, OptionText="Více než 50 (Prohlížeč trpí)")
-            db.session.add_all([opt1, opt2, opt3])
-            db.session.commit()
-
 if __name__ == '__main__':
-    initialize_database()
     app.run(debug=True)

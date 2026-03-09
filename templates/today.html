@@ -14,7 +14,7 @@
         </form>
     {% else %}
         <div style="margin-top: 30px;">
-            <h3>Výsledky:</h3>
+            <h3>Results:</h3>
             {% for option in poll.Options %}
                 <div style="margin-bottom: 15px;">
                     <strong>{{ option.OptionText }}</strong>: 
@@ -24,7 +24,7 @@
                     {% else %}
                         {% set percentage = 0 %}
                     {% endif %}
-                    {{ percentage }}% ({{ count }} hlasů)
+                    {{ percentage }}% ({{ count }} votes)
                 </div>
             {% endfor %}
         </div>

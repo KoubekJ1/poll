@@ -59,12 +59,12 @@ with app.app_context():
         db.create_all()
         admin = User(Email='admin@jpoll.com', Password=generate_password_hash('admin', method='pbkdf2:sha256'), IsAdmin=True)
         db.session.add(admin)
-        poll = Poll(Title="Kolik otevřených záložek je ještě normální?")
+        poll = Poll(Title="What browser tab amount is still acceptible?")
         db.session.add(poll)
         db.session.commit()
-        opt1 = PollOption(PollID=poll.PollID, OptionText="Méně než 10")
-        opt2 = PollOption(PollID=poll.PollID, OptionText="10 až 50")
-        opt3 = PollOption(PollID=poll.PollID, OptionText="Více než 50 (Prohlížeč trpí)")
+        opt1 = PollOption(PollID=poll.PollID, OptionText="Less than 10")
+        opt2 = PollOption(PollID=poll.PollID, OptionText="10–50")
+        opt3 = PollOption(PollID=poll.PollID, OptionText="More than 50 (rip browser)")
         db.session.add_all([opt1, opt2, opt3])
         db.session.commit()
 
@@ -240,6 +240,24 @@ def admin_bugs():
             is_admin = True
 
     return render_template('bugs.html', bugs=reports, is_admin=is_admin)
+
+@app.route('/bugs/close', methods=['POST'])
+@login_required
+def close_bug():
+    user = User.query.get(session['user_id'])
+    if not user or not user.IsAdmin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('today'))
+
+    report_id = request.form.get('report_id')
+    if report_id:
+        bug = BugReport.query.get(report_id)
+        if bug:
+            bug.IsResolved = True
+            db.session.commit()
+            flash('Bug report marked as resolved.', 'success')
+            
+    return redirect(url_for('admin_bugs'))
 
 @app.route('/logout')
 def logout():

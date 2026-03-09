@@ -266,7 +266,7 @@ def logout():
 
 @app.after_request
 def add_security_headers(resp):
-    csp = "default-src 'self'; style-src 'self' 'unsafe-inline';"
+    csp = "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;"
     resp.headers['Content-Security-Policy']=csp
     return resp
 

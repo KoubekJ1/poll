@@ -264,6 +264,12 @@ def logout():
     session.pop('user_id', None)
     return redirect(url_for('today'))
 
+@app.after_request
+def add_security_headers(resp):
+    csp = "default-src 'self'; style-src 'self' 'unsafe-inline';"
+    resp.headers['Content-Security-Policy']=csp
+    return resp
+
 if __name__ == '__main__':
     port = int(os.environ.get('APP_PORT', 8000))
     app.run(host='0.0.0.0', port=port, debug=True)
